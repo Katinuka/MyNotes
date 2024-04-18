@@ -1,4 +1,4 @@
-package com.example.mynotes
+package com.example.mynotes.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +33,7 @@ import java.time.LocalDateTime
 @Composable
 fun NoteEditor(created: LocalDateTime) {
     val context = LocalContext.current
-    val currentNote by remember { mutableStateOf(DB.getAllNotes(context).first { it.created == created.toMilliseconds() }) }
+    val currentNote by remember { mutableStateOf(DB.getNotes(context).first { it.created == created.toMilliseconds() }) }
     var currentNoteText by remember { mutableStateOf(currentNote.text) }
     var currentNoteTitle by remember { mutableStateOf(currentNote.title) }
     val keyboardController = LocalSoftwareKeyboardController.current
