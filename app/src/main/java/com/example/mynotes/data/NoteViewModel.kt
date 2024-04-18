@@ -10,37 +10,46 @@ import kotlinx.coroutines.flow.update
 
 class NoteViewModel(context: Context) : ViewModel() {
     private val _state = MutableStateFlow(DB.getNotes(context))
-    var state: StateFlow<MutableList<Note>> = _state.asStateFlow()
+    var state = _state.asStateFlow()
 
-    fun setNoteText(created: Long, newText: String) {
-        val currentNote = _state.value.find { it.created == created } ?: return
-        val newTitle = if (currentNote.title != "") currentNote.title else formatTitle(newText)
-
-        _state.update { it.toMutableList().apply {
-            currentNote.title = newTitle
+    fun setNoteText(context: Context, created: Long, newText: String) {
+        _state.update { currentState ->
+            currentState.toMutableList().apply {
+            val currentNote = find { it.created == created } ?: return
             currentNote.text = newText
+            DB.saveNote(context, currentNote)
         } }
     }
 
-    fun setNoteTitle(created: Long, newTitle: String) {
-        val currentNote = _state.value.find { it.created == created } ?: return
-        _state.update { it.toMutableList().apply { currentNote.text = newTitle } }
+    fun setNoteTitle(context: Context, created: Long, newTitle: String) {
+        _state.update { currentState -> currentState.toMutableList().apply {
+            val currentNote = find { it.created == created } ?: return
+            currentNote.title = newTitle
+            DB.saveNote(context, currentNote)
+        } }
     }
 
-    fun addNote(context: Context, newText: String = "", newTitle: String = "ez") {
-        // TODO: find out how the state update works
-        // The first code block works while
-        // the second one doesn't update the state for the UI part of the app
-        /*_state.update { it.toMutableList().apply {
-            val a = add(Note(text = newText, title = newTitle))
-            DB.saveNote(context = context, note = Note(text = newText, title = newTitle))
-        } }*/
+    fun addNote(context: Context, newText: String = "", newTitle: String = "New Note") {
+        val newNote = Note(text = newText, title = newTitle)
+        DB.saveNote(context = context, note = newNote) // This is a strange line
+        // The first adding creates 2 notes for the UI instead of one
+        // However, if it's below the `_state.update` line, the UI won't be updated
+        // In general, the whole thing is wierd:
 
-        _state.update { it.toMutableList().apply {
-            val newNote = Note(text = newText, title = newTitle)
-            val a = add(newNote)
-            DB.saveNote(context = context, note = newNote)
-        } }
+        //        _state.update {it.toMutableList().apply {
+        //            add(Note("test"))
+        //        }}    will work and update the UI
+
+
+        //        _state.update {it.toMutableList().apply {
+        //            val newNote = Note("test")
+        //            add(newNote)
+        //        }}    but this will NOT
+
+
+        _state.update {currentState -> currentState.toMutableList().apply {
+            add(newNote)
+        }}
     }
 
     fun removeNote(context: Context, created: Long) {
@@ -51,11 +60,5 @@ class NoteViewModel(context: Context) : ViewModel() {
 
     fun getNote(created: Long) : Note {
         return _state.value.find { it.created == created } ?: Note("Error")
-    }
-
-    fun ez() {
-        _state.update { it ->
-            it.toMutableList().apply { add(Note("ez2")) }
-        }
     }
 }

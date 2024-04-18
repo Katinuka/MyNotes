@@ -14,7 +14,7 @@ import java.time.OffsetDateTime
  * an ellipsis (...) will be appended to the end of the limited title.
  * @return A new title based on the provided [text]
  */
-fun formatTitle(text: String, maxLength: Int = 15) : String {
+fun formatTitle(text: String, maxLength: Int = 13) : String {
     val firstLine = text.substringBefore('\n')
     if (firstLine.length < maxLength) {
         return firstLine
@@ -40,6 +40,30 @@ class Note {
         this.title = formatTitle(title)
         this.created = created.toMilliseconds()
     }
+
+    override fun toString(): String {
+        return "Note(created=$created, text='$text', title='$title')"
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Note
+
+        if (created != other.created) return false
+        if (text != other.text) return false
+        return title == other.title
+    }
+
+    override fun hashCode(): Int {
+        var result = created.hashCode()
+        result = 31 * result + text.hashCode()
+        result = 31 * result + title.hashCode()
+        return result
+    }
+
+
 }
 
 fun LocalDateTime.toMilliseconds() : Long {

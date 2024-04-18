@@ -2,6 +2,7 @@ package com.example.mynotes.ui
 
 
 import android.content.Context
+import android.os.Bundle
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,11 +33,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
+import androidx.navigation.Navigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.mynotes.data.Note
 import com.example.mynotes.data.NoteViewModel
+import com.example.mynotes.data.formatTitle
 import com.example.mynotes.data.toLocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -69,7 +73,7 @@ fun MainMenu(
         }
 
         composable(route = "NoteEditor/{created}") {
-            val created = it.arguments?.getLong("created") ?: 0
+            val created = it.arguments?.getString("created")?.toLong() ?: 0
 
             NoteEditor(
                 navController = navController,
@@ -126,7 +130,7 @@ fun NoteCard(
     Card(
         modifier = Modifier.pointerInput(Unit) { detectTapGestures(
             onTap = {
-                navController.navigate("NoteEditor/{$created}")
+                navController.navigate("NoteEditor/$created")
             }, 
             onLongPress = { isDropdownMenuVisible = true }
         )},
@@ -134,7 +138,7 @@ fun NoteCard(
         val currentNote = uiState.find { it.created == created } ?: Note("Error")
         Column {
             Text(
-                text = currentNote.title,
+                text = if (currentNote.title != "") currentNote.title else formatTitle(currentNote.text),
                 modifier = Modifier
                     .padding(16.dp)
                     .height(32.dp),

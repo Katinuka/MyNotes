@@ -57,8 +57,8 @@ fun NoteEditor(
             Button(onClick = {
                 currentNote.title = currentNoteTitle
                 currentNote.text = currentNoteText
-                viewModel.setNoteText(created = created, newText = currentNoteTitle)
-                viewModel.setNoteTitle(created = created, newTitle = currentNoteTitle)
+                viewModel.setNoteText(context = context, created = created, newText = currentNoteText)
+                viewModel.setNoteTitle(context = context, created = created, newTitle = currentNoteTitle)
                 Toast.makeText(context, "Saved successfully!", Toast.LENGTH_SHORT).show()
                 keyboardController?.hide()
             }, modifier = Modifier.padding(top = 8.dp, end = 8.dp)) {
