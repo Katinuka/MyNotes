@@ -1,8 +1,7 @@
 package com.example.mynotes.ui
 
 
-import android.content.Intent
-import android.os.Bundle
+import android.content.Context
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,59 +31,66 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
-import com.example.mynotes.NoteEditorActivity
-import com.example.mynotes.data.DB
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.mynotes.data.Note
+import com.example.mynotes.data.NoteViewModel
 import com.example.mynotes.data.toLocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun MainMenu() {
-    val context = LocalContext.current
-    var notes by remember { mutableStateOf(DB.getNotes(context)) }
+fun MainMenu(
+    context: Context,
+    viewModel: NoteViewModel = NoteViewModel(context),
+    navController: NavHostController = rememberNavController()
+) {
+    val uiState by viewModel.state.collectAsState()
 
-    val addNewNote: () -> Unit = {
-        val newNote = Note("New Note")
-        notes += newNote
-        DB.saveNote(context, newNote)
+    NavHost(
+        navController = navController,
+        startDestination = "MainMenu"
+    ) {
+        composable(route = "MainMenu") {
+            Column {
+                TopBar(viewModel)
 
-    }
-    val removeNote: (Note) -> Unit = {
-        notes -= it
-        DB.deleteNote(context, it)
-    }
-    val editNote: (Note) -> Unit = {
-        val currNote = notes.find { note -> it.created == note.created }
-        currNote?.text = it.text
-        currNote?.title = it.title
-        DB.saveNote(context, it)
-    }
-
-    Column {
-        TopBar(addNewNote)
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(notes) { note ->
-                NoteCard(note = note, onNoteRemoved = removeNote, onNoteEdited = editNote)
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(uiState) { note ->
+                        NoteCard(viewModel, navController, created = note.created)
+                    }
+                }
             }
+        }
+
+        composable(route = "NoteEditor/{created}") {
+            val created = it.arguments?.getLong("created") ?: 0
+
+            NoteEditor(
+                navController = navController,
+                viewModel = viewModel,
+                created = created)
         }
     }
 }
 
 @Composable
-fun TopBar(onNewNoteAdded: () -> Unit) {
+fun TopBar(viewModel: NoteViewModel) {
+    val context = LocalContext.current
     TopAppBar(
         title = {},
         modifier = Modifier.height(64.dp),
         colors = topAppBarColors(MaterialTheme.colorScheme.primary),
         actions = {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(text = "My Notes",
@@ -92,7 +99,7 @@ fun TopBar(onNewNoteAdded: () -> Unit) {
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 Button(onClick = {
-                    onNewNoteAdded()
+                    viewModel.addNote(context)
                 }, modifier = Modifier.padding(top = 4.dp)) {
                     Text(text = "+", fontSize = 16.sp)
                 }
@@ -103,39 +110,38 @@ fun TopBar(onNewNoteAdded: () -> Unit) {
 
 @Composable
 fun NoteCard(
-    note: Note,
-    modifier: Modifier = Modifier,
-    onNoteRemoved: (Note) -> Unit,
-    onNoteEdited: (Note) -> Unit
+    viewModel: NoteViewModel,
+    navController: NavHostController,
+    created: Long,
 ) {
-    val context = LocalContext.current
     var isDropdownMenuVisible by remember { mutableStateOf(false) }
 
     // render the dropdown menu
     if (isDropdownMenuVisible) {
-        NoteDropdownMenu(note, onDismissRequest = { isDropdownMenuVisible = false}, onNoteRemoved = onNoteRemoved)
+        NoteDropdownMenu(viewModel, created, onDismissRequest = { isDropdownMenuVisible = false})
     }
+    val uiState by viewModel.state.collectAsState()
 
     // render the card
     Card(
-        modifier = modifier.pointerInput(Unit) { detectTapGestures(
+        modifier = Modifier.pointerInput(Unit) { detectTapGestures(
             onTap = {
-                val intent = Intent(context, NoteEditorActivity::class.java)
-                intent.putExtra("created", note.created)
-                startActivity(context, intent, null)
-                isDropdownMenuVisible = false
+                navController.navigate("NoteEditor/{$created}")
             }, 
             onLongPress = { isDropdownMenuVisible = true }
         )},
     ) {
+        val currentNote = uiState.find { it.created == created } ?: Note("Error")
         Column {
             Text(
-                text = note.title,
-                modifier = Modifier.padding(16.dp).height(40.dp),
-                style = MaterialTheme.typography.headlineSmall,
+                text = currentNote.title,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .height(32.dp),
+                style = TextStyle(fontSize = 18.sp)
             )
             Text(
-                text = note.created.toLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM uuuu")),
+                text = currentNote.created.toLocalDateTime().format(DateTimeFormatter.ofPattern("d MMM uuuu")),
                 modifier = Modifier.padding(4.dp),
                 style = MaterialTheme.typography.labelLarge
             )

@@ -11,7 +11,7 @@ class MainActivity: ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            MainMenu()
+            MainMenu(this)
         }
         Log.i("MainActivity", "onStart()")
     }

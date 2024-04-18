@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,15 +26,21 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.mynotes.data.DB
+import com.example.mynotes.data.NoteViewModel
 import com.example.mynotes.data.toMilliseconds
 import java.time.LocalDateTime
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun NoteEditor(created: LocalDateTime) {
+fun NoteEditor(
+    viewModel: NoteViewModel,
+    navController: NavHostController,
+    created: Long
+) {
     val context = LocalContext.current
-    val currentNote by remember { mutableStateOf(DB.getNotes(context).first { it.created == created.toMilliseconds() }) }
+    val currentNote by remember { mutableStateOf(viewModel.getNote(created = created)) }
     var currentNoteText by remember { mutableStateOf(currentNote.text) }
     var currentNoteTitle by remember { mutableStateOf(currentNote.title) }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -43,12 +50,15 @@ fun NoteEditor(created: LocalDateTime) {
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)) {
 
             Button(onClick = {
                 currentNote.title = currentNoteTitle
                 currentNote.text = currentNoteText
-                DB.saveNote(context, currentNote)
+                viewModel.setNoteText(created = created, newText = currentNoteTitle)
+                viewModel.setNoteTitle(created = created, newTitle = currentNoteTitle)
                 Toast.makeText(context, "Saved successfully!", Toast.LENGTH_SHORT).show()
                 keyboardController?.hide()
             }, modifier = Modifier.padding(top = 8.dp, end = 8.dp)) {
@@ -69,7 +79,10 @@ fun NoteEditor(created: LocalDateTime) {
         TextField(
             value = currentNoteText,
             onValueChange = { newText -> currentNoteText = newText },
-            modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(top = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(top = 16.dp),
             textStyle = TextStyle(textAlign = TextAlign.Start, fontSize = 18.sp, lineHeight = 32.sp),
             placeholder = { Text("Enter your note here...") }
         )

@@ -8,7 +8,7 @@ object DB {
 
     private val notes = mutableListOf<Note>()
 
-    fun getNotes(context: Context): List<Note> {
+    fun getNotes(context: Context): MutableList<Note> {
         if (notes.isEmpty()) {
             notes.addAll(getAllNotes(context))
         }

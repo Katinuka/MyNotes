@@ -9,16 +9,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.mynotes.data.DB
 import com.example.mynotes.data.Note
+import com.example.mynotes.data.NoteViewModel
 
 @Composable
-fun NoteDropdownMenu(note: Note, onDismissRequest: () -> Unit, onNoteRemoved: (Note) -> Unit) {
+fun NoteDropdownMenu(viewModel: NoteViewModel, created: Long, onDismissRequest: () -> Unit) {
+    val context = LocalContext.current
     Box(modifier = Modifier.size(100.dp)) {
         DropdownMenu(expanded = true, onDismissRequest = onDismissRequest) {
             DropdownMenuItem(text = { Text(text = "Delete")}, onClick = {
-                onNoteRemoved(note)
                 onDismissRequest()
+                viewModel.removeNote(context = context, created = created)
             })
         }
     }
