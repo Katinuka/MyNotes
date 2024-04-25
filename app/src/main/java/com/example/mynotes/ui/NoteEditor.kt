@@ -12,10 +12,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -27,10 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.mynotes.data.DB
 import com.example.mynotes.data.NoteViewModel
-import com.example.mynotes.data.toMilliseconds
-import java.time.LocalDateTime
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -44,6 +42,7 @@ fun NoteEditor(
     var currentNoteText by remember { mutableStateOf(currentNote.text) }
     var currentNoteTitle by remember { mutableStateOf(currentNote.title) }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -57,8 +56,10 @@ fun NoteEditor(
             Button(onClick = {
                 currentNote.title = currentNoteTitle
                 currentNote.text = currentNoteText
-                viewModel.setNoteText(context = context, created = created, newText = currentNoteText)
-                viewModel.setNoteTitle(context = context, created = created, newTitle = currentNoteTitle)
+                coroutineScope.launch {
+                    viewModel.setNoteText(created = created, newText = currentNoteText)
+                    viewModel.setNoteTitle(created = created, newTitle = currentNoteTitle)
+                }
                 Toast.makeText(context, "Saved successfully!", Toast.LENGTH_SHORT).show()
                 keyboardController?.hide()
             }, modifier = Modifier.padding(top = 8.dp, end = 8.dp)) {

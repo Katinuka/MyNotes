@@ -1,5 +1,8 @@
 package com.example.mynotes.data
 
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -23,22 +26,32 @@ fun formatTitle(text: String, maxLength: Int = 13) : String {
     return firstLine.substring(0, maxLength - 3) + "..."
 }
 
+@Entity(tableName = "notes")
 class Note {
+    @PrimaryKey(autoGenerate = false)
     var created: Long = LocalDateTime.now().toMilliseconds()
     var text: String = ""
 
     var title: String = ""
         set(newTitle) { field = formatTitle(newTitle) }
 
+    @Ignore
     constructor(text: String) {
         this.text = text
         this.title = formatTitle(text)
     }
 
+    @Ignore
     constructor(text: String, title: String = formatTitle(text), created: LocalDateTime = LocalDateTime.now()) {
         this.text = text
         this.title = formatTitle(title)
         this.created = created.toMilliseconds()
+    }
+
+    constructor(text: String, title: String = formatTitle(text), created: Long = LocalDateTime.now().toMilliseconds()) {
+        this.text = text
+        this.title = formatTitle(title)
+        this.created = created
     }
 
     override fun toString(): String {

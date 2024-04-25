@@ -1,8 +1,6 @@
 package com.example.mynotes.ui
 
 
-import android.content.Context
-import android.os.Bundle
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,17 +22,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavOptions
-import androidx.navigation.Navigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -42,12 +39,12 @@ import com.example.mynotes.data.Note
 import com.example.mynotes.data.NoteViewModel
 import com.example.mynotes.data.formatTitle
 import com.example.mynotes.data.toLocalDateTime
+import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun MainMenu(
-    context: Context,
-    viewModel: NoteViewModel = NoteViewModel(context),
+    viewModel: NoteViewModel = viewModel(factory = AppViewModelProvider.Factory),
     navController: NavHostController = rememberNavController()
 ) {
     val uiState by viewModel.state.collectAsState()
@@ -85,7 +82,8 @@ fun MainMenu(
 
 @Composable
 fun TopBar(viewModel: NoteViewModel) {
-    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     TopAppBar(
         title = {},
         modifier = Modifier.height(64.dp),
@@ -103,7 +101,9 @@ fun TopBar(viewModel: NoteViewModel) {
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 Button(onClick = {
-                    viewModel.addNote(context)
+                    coroutineScope.launch {
+                        viewModel.addNote()
+                    }
                 }, modifier = Modifier.padding(top = 4.dp)) {
                     Text(text = "+", fontSize = 16.sp)
                 }
@@ -125,12 +125,13 @@ fun NoteCard(
         NoteDropdownMenu(viewModel, created, onDismissRequest = { isDropdownMenuVisible = false})
     }
     val uiState by viewModel.state.collectAsState()
+    val newRoute = "NoteEditor/$created"
 
     // render the card
     Card(
         modifier = Modifier.pointerInput(Unit) { detectTapGestures(
             onTap = {
-                navController.navigate("NoteEditor/$created")
+                navController.navigate(newRoute)
             }, 
             onLongPress = { isDropdownMenuVisible = true }
         )},

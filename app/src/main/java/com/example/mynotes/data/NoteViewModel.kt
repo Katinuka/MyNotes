@@ -1,36 +1,53 @@
 package com.example.mynotes.data
 
-import android.content.Context
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import java.time.LocalDateTime
 
-class NoteViewModel(context: Context) : ViewModel() {
-    private val _state = MutableStateFlow(DB.getNotes(context))
-    var state = _state.asStateFlow()
+class NoteViewModel(private val itemsRepository: NoteRepository) : ViewModel() {
+    var state = itemsRepository.getAllNotesStream()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+            initialValue = listOf()
+        )
 
-    fun setNoteText(context: Context, created: Long, newText: String) {
-        _state.update { currentState ->
-            currentState.toMutableList().apply {
-            val currentNote = find { it.created == created } ?: return
-            currentNote.text = newText
-            DB.saveNote(context, currentNote)
-        } }
+    suspend fun setNoteText(created: Long, newText: String) {
+        val currentNote = state.value.find { it.created == created }
+        if (currentNote == null) {
+            itemsRepository.insertNote(Note(text = newText, created = created))
+            return
+        }
+        currentNote.text = newText
+        itemsRepository.updateNote(currentNote)
+//        _state.update { currentState ->
+//            currentState.toMutableList().apply {
+//            val currentNote = find { it.created == created } ?: return
+//            currentNote.text = newText
+//            DB.saveNote(context, currentNote)
+//        } }
     }
 
-    fun setNoteTitle(context: Context, created: Long, newTitle: String) {
-        _state.update { currentState -> currentState.toMutableList().apply {
-            val currentNote = find { it.created == created } ?: return
-            currentNote.title = newTitle
-            DB.saveNote(context, currentNote)
-        } }
+    suspend fun setNoteTitle(created: Long, newTitle: String) {
+        val currentNote = state.value.find { it.created == created }
+        if (currentNote == null) {
+            itemsRepository.insertNote(Note(text = "", title = newTitle, created = created))
+            return
+        }
+        currentNote.title = newTitle
+        itemsRepository.updateNote(currentNote)
+//        _state.update { currentState -> currentState.toMutableList().apply {
+//            val currentNote = find { it.created == created } ?: return
+//            currentNote.title = newTitle
+//            DB.saveNote(context, currentNote)
+//        } }
     }
 
-    fun addNote(context: Context, newText: String = "", newTitle: String = "New Note") {
-        val newNote = Note(text = newText, title = newTitle)
+    suspend fun addNote(newText: String = "", newTitle: String = "New Note") {
+        itemsRepository.insertNote(Note(text = newText, title = newTitle, created = LocalDateTime.now()))
+        /*val newNote = Note(text = newText, title = newTitle)
         DB.saveNote(context = context, note = newNote) // This is a strange line
         // The first adding creates 2 notes for the UI instead of one
         // However, if it's below the `_state.update` line, the UI won't be updated
@@ -49,16 +66,28 @@ class NoteViewModel(context: Context) : ViewModel() {
 
         _state.update {currentState -> currentState.toMutableList().apply {
             add(newNote)
-        }}
+        }}*/
     }
 
-    fun removeNote(context: Context, created: Long) {
-        val currentNote = _state.value.find { it.created == created } ?: return
-        _state.update { it.toMutableList().apply { remove(currentNote) } }
-        DB.deleteNote(context = context, note = currentNote)
+    suspend fun removeNote(created: Long) {
+        val currentNote = state.value.find { it.created == created } ?: return
+        itemsRepository.deleteNote(currentNote)
+//        val currentNote = _state.value.find { it.created == created } ?: return
+//        _state.update { it.toMutableList().apply { remove(currentNote) } }
+//        DB.deleteNote(context = context, note = currentNote)
     }
 
     fun getNote(created: Long) : Note {
-        return _state.value.find { it.created == created } ?: Note("Error")
+//        return itemsRepository.getNoteStream(created)
+//            .stateIn(
+//                scope = viewModelScope,
+//                started = SharingStarted.WhileSubscribed(TIMEOUT_MILLIS),
+//                initialValue = Note("Error")
+//            ).value ?: Note("Error Null")
+        return state.value.find { it.created == created } ?: Note("Error")
+    }
+
+    companion object {
+        private const val TIMEOUT_MILLIS = 5_000L
     }
 }

@@ -7,4 +7,5 @@ plugins {
 
 extra.apply {
     set("lifecycle_version", "2.7.0")
+    set("room_version", "2.6.1")
 }
