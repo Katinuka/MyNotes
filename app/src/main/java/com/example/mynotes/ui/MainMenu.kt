@@ -1,6 +1,8 @@
 package com.example.mynotes.ui
 
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -83,6 +86,7 @@ fun MainMenu(
 @Composable
 fun TopBar(viewModel: NoteViewModel) {
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     TopAppBar(
         title = {},
@@ -102,7 +106,12 @@ fun TopBar(viewModel: NoteViewModel) {
                 )
                 Button(onClick = {
                     coroutineScope.launch {
-                        viewModel.addNote()
+                        runCatching {
+                            viewModel.addNote()
+                        }.onFailure {
+                            Log.e("MainMenu", "Couldn't add a new note: ${it.message}")
+                            Toast.makeText(context, "Couldn't add a new note! Report this", Toast.LENGTH_LONG).show()
+                        }
                     }
                 }, modifier = Modifier.padding(top = 4.dp)) {
                     Text(text = "+", fontSize = 16.sp)

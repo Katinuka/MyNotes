@@ -2,6 +2,7 @@ package com.example.mynotes.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDateTime
@@ -15,6 +16,8 @@ class NoteViewModel(private val itemsRepository: NoteRepository) : ViewModel() {
         )
 
     suspend fun setNoteText(created: Long, newText: String) {
+        // TODO: remove this delay :)
+        delay(2000)
         val currentNote = state.value.find { it.created == created }
         if (currentNote == null) {
             itemsRepository.insertNote(Note(text = newText, created = created))
@@ -47,9 +50,10 @@ class NoteViewModel(private val itemsRepository: NoteRepository) : ViewModel() {
 
     suspend fun addNote(newText: String = "", newTitle: String = "New Note") {
         itemsRepository.insertNote(Note(text = newText, title = newTitle, created = LocalDateTime.now()))
+
         /*val newNote = Note(text = newText, title = newTitle)
         DB.saveNote(context = context, note = newNote) // This is a strange line
-        // The first adding creates 2 notes for the UI instead of one
+        // The first addition creates 2 notes for the UI instead of one
         // However, if it's below the `_state.update` line, the UI won't be updated
         // In general, the whole thing is wierd:
 

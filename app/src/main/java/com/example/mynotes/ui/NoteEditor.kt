@@ -1,5 +1,6 @@
 package com.example.mynotes.ui
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -49,18 +50,21 @@ fun NoteEditor(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
-        Row(modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)) {
-
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Button(onClick = {
                 currentNote.title = currentNoteTitle
                 currentNote.text = currentNoteText
                 coroutineScope.launch {
-                    viewModel.setNoteText(created = created, newText = currentNoteText)
-                    viewModel.setNoteTitle(created = created, newTitle = currentNoteTitle)
+                    runCatching {
+                        viewModel.setNoteText(created = created, newText = currentNoteText)
+                        viewModel.setNoteTitle(created = created, newTitle = currentNoteTitle)
+                    }.onSuccess {
+                        Toast.makeText(context, "Saved successfully!", Toast.LENGTH_SHORT).show()
+                    }.onFailure {
+                        Log.e("NoteEditor", "Couldn't save the note: ${it.message}")
+                        Toast.makeText(context, "Couldn't save the note! Report this", Toast.LENGTH_LONG).show()
+                    }
                 }
-                Toast.makeText(context, "Saved successfully!", Toast.LENGTH_SHORT).show()
                 keyboardController?.hide()
             }, modifier = Modifier.padding(top = 8.dp, end = 8.dp)) {
                 Text("Save")
